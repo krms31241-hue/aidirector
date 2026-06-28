@@ -1,0 +1,6 @@
+{
+  "name": "AI Director",
+  "description": "A professional AI orchestration platform that coordinates multiple AI models.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
