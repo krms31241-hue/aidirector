@@ -1,20 +1,58 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+---
+title: AI Director
+emoji: 🤖
+colorFrom: blue
+colorTo: purple
+sdk: docker
+pinned: false
+---
 
-# Run and deploy your AI Studio app
+# 🤖 AI Director
 
-This contains everything you need to run your app locally.
+> The next-generation AI software engineer powered by multiple AI agents.
 
-View your app in AI Studio: https://ai.studio/apps/efa15931-2d91-4a0a-aba0-c2975b93a234
+AI Director is an advanced AI platform designed to build, analyze, improve, test, and deploy real-world software projects automatically.
 
-## Run Locally
+## ✨ Features
 
-**Prerequisites:**  Node.js
+- 🧠 Multi-Agent AI Architecture
+- 💻 Generate complete applications
+- 🌐 Build modern websites
+- 📱 Create Android applications
+- 🖥️ Generate desktop software
+- 🔌 Build REST APIs
+- 🧪 Automatic testing
+- 🛠️ Automatic bug fixing
+- 🔒 Security analysis
+- ⚡ Performance optimization
+- 📦 Project packaging
+- 🚀 Deployment support
+- 💾 Persistent memory
+- 📊 Live build progress
+- 🤝 Multiple AI providers support
 
+## 🏗️ Technology Stack
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your aidirector API key
-3. Run the app:
-   `npm run dev`
+- Docker
+- Node.js
+- TypeScript
+- React
+- Vite
+- SQLite
+- Express
+- AI Horde
+- Gemini
+- Hugging Face
+- Groq
+
+## 🚀 Deployment
+
+This Space runs using Docker.
+
+## 📄 License
+
+MIT License
+
+## 👨‍💻 Developer
+
+Created by **Karam**
