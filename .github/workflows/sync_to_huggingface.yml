@@ -1,0 +1,34 @@
+name: Sync to Hugging Face
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Remove old git history cache
+        run: |
+          git gc --prune=now
+          git reflog expire --expire=now --all
+
+      - name: Configure Git
+        run: |
+          git config user.email "github-actions@github.com"
+          git config user.name "GitHub Actions"
+
+      - name: Push to Hugging Face
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          git remote remove hf || true
+          git remote add hf https://krms3u:$HF_TOKEN@huggingface.co/spaces/krms3u/aidirector
+          git push hf HEAD:main --force
