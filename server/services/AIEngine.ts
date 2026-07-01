@@ -4,7 +4,7 @@ import { modelRouter } from "./ModelRouter";
 import { conflictResolver } from "./ConflictResolver";
 import { promptLibrary } from "./ai/promptLibrary";
 import { db } from "../infrastructure/db";
-import crypto from "crypto";
+import crypto from "node:crypto";
 
 export class AIEngine {
   public async executeTask(taskDescription: string, projectId?: string) {

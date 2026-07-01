@@ -1,7 +1,7 @@
 import { logger } from "./LoggingEngine";
 
 export class QueueManager {
-  private queue: (() => Promise<void>)[] = [];
+  private queue: (() => Promise<any>)[] = [];
   private processing = false;
 
   public async enqueue<T>(task: () => Promise<T>): Promise<T> {
