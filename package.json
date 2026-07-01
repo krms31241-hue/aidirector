@@ -9,7 +9,8 @@
     "start": "node dist/server.cjs",
     "clean": "rm -rf dist",
     "lint": "eslint . --ext .ts,.tsx",
-    "prettier": "prettier --check ."
+    "prettier": "prettier --check .",
+    "migrate": "node server/db/migrate.js"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
