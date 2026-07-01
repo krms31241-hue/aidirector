@@ -4,16 +4,20 @@ import { SecurityLayer } from "./infrastructure/security/SecurityLayer";
 import { createServer as createViteServer } from "vite";
 import apiRouter from "./api/routes";
 import { logger } from "./services/LoggingEngine";
+import dotenv from "dotenv";
 
-const PORT = 3000;
+dotenv.config();
+
+const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 
 async function startServer() {
   const app = express();
 
-  // Security Middleware
   SecurityLayer.apply(app);
 
-  app.use(express.json());
+  // Increase body size limit for file content transfers
+  app.use(express.json({ limit: process.env.EXPRESS_JSON_LIMIT || "2mb" }));
+  app.use(express.urlencoded({ extended: true, limit: process.env.EXPRESS_JSON_LIMIT || "2mb" }));
 
   // API Routes
   app.use("/api", apiRouter);
@@ -27,8 +31,8 @@ async function startServer() {
       res: Response,
       _next: NextFunction,
     ) => {
-      logger.error("API Error:", err);
-      res.status(500).json({ error: err.message || "Internal Server Error" });
+      logger.error("API Error:", err?.message || err);
+      res.status(500).json({ error: err?.message || "Internal Server Error" });
     },
   );
 
@@ -52,4 +56,7 @@ async function startServer() {
   });
 }
 
-startServer();
+startServer().catch(err => {
+  console.error("Failed to start server:", err);
+  process.exit(1);
+});
