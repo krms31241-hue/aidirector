@@ -5,37 +5,37 @@ import cors from "cors";
 
 export class SecurityLayer {
   public static apply(app: Application) {
-    // Trust reverse proxy for correct IP
-    app.set("trust proxy", 1);
+    // Trust reverse proxy only if explicitly configured
+    const trustProxy = process.env.TRUST_PROXY === "1" || process.env.TRUST_PROXY === "true";
+    if (trustProxy) app.set("trust proxy", 1);
 
-    // Helmet for HTTP headers
     app.use(helmet({
-      contentSecurityPolicy: false, // Disabled for dev/vite fallback
+      contentSecurityPolicy: process.env.NODE_ENV === "production",
       crossOriginEmbedderPolicy: false,
     }));
 
-    // Rate Limiting
+    // General API rate limiter
     const apiLimiter = rateLimit({
-      windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 1000, // Limit each IP to 1000 requests per window
-      message: { error: "Too many requests, please try again later." },
-      validate: { xForwardedForHeader: false },
+      windowMs: 15 * 60 * 1000,
+      max: Number(process.env.RATE_LIMIT_API) || 1000,
       standardHeaders: true,
       legacyHeaders: false,
     });
-    
-    // Strict limiter for heavy tasks
+
+    // Heavy operations limiter (AI executions) - attach to messages endpoint
     const heavyLimiter = rateLimit({
       windowMs: 15 * 60 * 1000,
-      max: 100, // 100 AI executions per 15 min
-      message: { error: "Too many AI executions, please try again later." },
-      validate: { xForwardedForHeader: false },
+      max: Number(process.env.RATE_LIMIT_AI) || 100,
+      standardHeaders: true,
+      legacyHeaders: false,
     });
 
     app.use("/api", apiLimiter);
-    app.use("/api/execute", heavyLimiter);
+    // apply heavyLimiter on the route that triggers orchestrator
+    app.use("/api/conversations/:conversationId/messages", heavyLimiter);
 
-    // CORS
-    app.use(cors());
+    // CORS: restrict in production using env var CORS_ORIGIN, fallback to allow all in dev
+    const corsOrigin = process.env.CORS_ORIGIN;
+    app.use(cors(corsOrigin ? { origin: corsOrigin, credentials: true } : undefined));
   }
 }
