@@ -1,34 +1,38 @@
-name: Sync to Hugging Face
+name: CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "prod/fixes-1", "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
-  sync:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
         with:
-          fetch-depth: 0
+          node-version: '20'
 
-      - name: Remove old git history cache
-        run: |
-          git gc --prune=now
-          git reflog expire --expire=now --all
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Configure Git
-        run: |
-          git config user.email "github-actions@github.com"
-          git config user.name "GitHub Actions"
+      - name: Run migrations
+        run: npm run migrate || true
 
-      - name: Push to Hugging Face
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: |
-          git remote remove hf || true
-          git remote add hf https://krms3u:$HF_TOKEN@huggingface.co/spaces/krms3u/aidirector
-          git push hf HEAD:main --force
+      - name: Lint
+        run: npm run lint || true
+
+      - name: Build
+        run: npm run build
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: aidirector:ci
