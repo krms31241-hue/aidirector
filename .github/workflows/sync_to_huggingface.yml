@@ -1,4 +1,4 @@
-name: CI
+name: sync_to_huggingface
 
 on:
   push:
@@ -11,21 +11,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --prefer-offline --no-audit --no-fund
 
       - name: Run migrations
-        run: npm run migrate || true
+        run: npm run migrate
+        continue-on-error: true
 
       - name: Lint
-        run: npm run lint || true
+        run: npm run lint
+        continue-on-error: true
 
       - name: Build
         run: npm run build
@@ -36,3 +42,41 @@ jobs:
           context: .
           push: false
           tags: aidirector:ci
+
+      - name: Install git-lfs (for large files, optional)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git-lfs
+          git lfs install --system
+
+      - name: Sync build artifacts to Hugging Face
+        if: github.event_name == 'push'
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}      # required: set HF_TOKEN secret in repo settings
+          HF_REPO: ${{ secrets.HF_REPO }}        # required: set HF_REPO secret like "username/repo-name"
+        run: |
+          set -euo pipefail
+          # Configure git
+          git config --global user.email "actions@github.com"
+          git config --global user.name "github-actions[bot]"
+
+          # Prepare a temporary repo with the build artifacts
+          rm -rf hf-sync || true
+          mkdir hf-sync
+          # Copy build output (adjust path if needed)
+          if [ -d "build" ]; then
+            cp -r build/* hf-sync/ || true
+          else
+            echo "No build/ directory found — skipping HF sync"
+            exit 0
+          fi
+
+          cd hf-sync
+          git init
+          git remote add origin "https://huggingface.co/${HF_REPO}.git"
+          git checkout -b main || true
+          git add -A
+          git commit -m "CI: sync build artifacts from GitHub" || echo "no changes to commit"
+
+          # Push using token (the token is masked automatically by GitHub Actions)
+          git push "https://${HF_TOKEN}@huggingface.co/${HF_REPO}.git" --force
