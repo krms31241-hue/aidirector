@@ -8,7 +8,16 @@ if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
 
+// Open DB file
 export const db = new Database(path.join(dataDir, "database.sqlite"));
+
+// Enable foreign keys and WAL for better concurrency and integrity
+try {
+  db.pragma("foreign_keys = ON");
+  db.pragma("journal_mode = WAL");
+} catch (err) {
+  console.warn("SQLite pragma set failed:", err);
+}
 
 // Initialize schema
 db.exec(`
