@@ -1,14 +1,16 @@
 import { Router } from "express";
 import { db } from "../infrastructure/db/index";
 import crypto from "node:crypto";
+import { logger } from "../services/LoggingEngine";
+import { createProjectSchema, createConversationSchema, createMessageSchema } from "./validators";
+import { orchestrator } from "../services/ai/orchestrator";
+import { providerManager } from "../infrastructure/providers/manager";
 
 const router = Router();
 
 router.get("/health", (req, res) => {
   res.json({ status: "ok", message: "AI Director API is running" });
 });
-
-import { orchestrator } from "../services/ai/orchestrator";
 
 // Projects
 router.get("/projects", (req, res) => {
@@ -19,7 +21,9 @@ router.get("/projects", (req, res) => {
 });
 
 router.post("/projects", (req, res) => {
-  const { name, description } = req.body;
+  const parsed = createProjectSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+  const { name, description } = parsed.data;
   const id = crypto.randomUUID();
   db.prepare(
     "INSERT INTO projects (id, name, description) VALUES (?, ?, ?)",
@@ -39,7 +43,9 @@ router.get("/projects/:projectId/conversations", (req, res) => {
 });
 
 router.post("/projects/:projectId/conversations", (req, res) => {
-  const { title } = req.body;
+  const parsed = createConversationSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+  const { title } = parsed.data;
   const id = crypto.randomUUID();
   db.prepare(
     "INSERT INTO conversations (id, project_id, title) VALUES (?, ?, ?)",
@@ -106,15 +112,17 @@ router.put("/projects/:projectId/files/:fileId", (req, res) => {
 });
 
 router.post("/conversations/:conversationId/messages", async (req, res) => {
-  const { content, provider } = req.body;
-  const role = req.body.role || "user";
+  const parsed = createMessageSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+
+  const { content, provider, role } = parsed.data;
   const conversationId = req.params.conversationId;
 
   // Save user message
   const userMsgId = crypto.randomUUID();
   db.prepare(
     "INSERT INTO messages (id, conversation_id, role, content) VALUES (?, ?, ?, ?)",
-  ).run(userMsgId, conversationId, "user", content);
+  ).run(userMsgId, conversationId, role || "user", content);
 
   try {
     const conversation = db.prepare("SELECT project_id FROM conversations WHERE id = ?").get(conversationId) as any;
@@ -141,12 +149,10 @@ router.post("/conversations/:conversationId/messages", async (req, res) => {
       provider: result.provider,
     });
   } catch (error: any) {
-    console.error("Error handling message:", error);
+    logger.error("Error handling message:", error?.message || error);
     res.status(500).json({ error: error.message });
   }
 });
-
-import { providerManager } from "../infrastructure/providers/manager";
 
 router.get("/providers", (req, res) => {
   const providers = providerManager.getAllProviders().map(p => ({
